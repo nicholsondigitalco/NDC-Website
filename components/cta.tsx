@@ -17,10 +17,36 @@ export function CTA() {
     message: "",
   })
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitted(true)
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const response = await fetch("https://hooks.zapier.com/hooks/catch/16474207/uvaw3yw/", {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          submittedAt: new Date().toISOString(),
+          source: "NDC Website Contact Form",
+        }),
+      })
+
+      // Zapier webhooks with no-cors mode don't return readable responses
+      // so we assume success if no error was thrown
+      setSubmitted(true)
+    } catch (err) {
+      setError("Something went wrong. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -66,6 +92,11 @@ export function CTA() {
               <Card className="border-border bg-card shadow-xl">
                 <CardContent className="p-8">
                   <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && (
+                      <div className="p-4 bg-destructive/10 text-destructive rounded-lg text-sm">
+                        {error}
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label htmlFor="name" className="text-sm font-medium text-card-foreground">
@@ -124,9 +155,10 @@ export function CTA() {
                       type="submit"
                       size="lg"
                       className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                      disabled={isSubmitting}
                     >
-                      Send Message
-                      <ArrowRight className="ml-2 h-5 w-5" />
+                      {isSubmitting ? "Sending..." : "Send Message"}
+                      {!isSubmitting && <ArrowRight className="ml-2 h-5 w-5" />}
                     </Button>
                   </form>
                 </CardContent>
